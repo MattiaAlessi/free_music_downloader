@@ -5,760 +5,1069 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Music Downloader</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Circular+Std:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet"/>
 <style>
-/* ===== RESET & BASE ===== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0a0a;
-  --surface:#111111;
+  --surface:#111;
   --surface2:#1a1a1a;
   --surface3:#242424;
   --border:#2a2a2a;
+  --border-hover:#3a3a3a;
   --green:#1DB954;
-  --green-dim:#158a3e;
-  --green-glow:rgba(29,185,84,0.15);
+  --green-dark:#158a3e;
+  --green-glow:rgba(29,185,84,.18);
+  --spotify:#1DB954;
   --orange:#ff6437;
   --blue:#3d91ff;
-  --text:#ffffff;
-  --text-muted:#a7a7a7;
-  --text-dim:#535353;
+  --purple:#a855f7;
+  --text:#fff;
+  --muted:#a7a7a7;
+  --dim:#535353;
   --radius:12px;
-  --radius-lg:20px;
-  --font:'DM Sans',sans-serif;
+  --radius-lg:18px;
+  --font:'DM Sans',system-ui,sans-serif;
+  --sidebar:240px;
 }
 html{scroll-behavior:smooth}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--font);
-  min-height:100vh;
-  overflow-x:hidden;
-}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
 
-/* ===== NOISE OVERLAY ===== */
-body::before{
-  content:'';
-  position:fixed;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events:none;z-index:0;opacity:.4;
-}
+/* noise */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;mix-blend-mode:overlay}
 
-/* ===== LAYOUT ===== */
-.layout{
-  display:grid;
-  grid-template-columns:260px 1fr;
-  grid-template-rows:auto 1fr auto;
-  min-height:100vh;
-  position:relative;z-index:1;
-}
+/* layout */
+.layout{display:grid;grid-template-columns:var(--sidebar) 1fr;grid-template-rows:56px 1fr;min-height:100vh}
 
-/* ===== SIDEBAR ===== */
+/* ── SIDEBAR ── */
 .sidebar{
-  grid-row:1/3;
-  background:var(--bg);
+  grid-row:1/3;background:var(--bg);
   border-right:1px solid var(--border);
-  padding:28px 20px;
-  display:flex;flex-direction:column;gap:32px;
+  padding:16px 12px;display:flex;flex-direction:column;gap:6px;
   position:sticky;top:0;height:100vh;overflow-y:auto;
 }
-.logo{
+.sidebar-logo{
   display:flex;align-items:center;gap:10px;
-  padding-bottom:8px;
+  padding:8px 10px 16px;
+  border-bottom:1px solid var(--border);margin-bottom:8px;
 }
-.logo-icon{
-  width:36px;height:36px;
-  background:var(--green);
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;
-  box-shadow:0 0 20px var(--green-glow);
+.logo-mark{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--green);display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+  box-shadow:0 0 16px var(--green-glow);
 }
-.logo-text{
-  font-size:15px;font-weight:700;letter-spacing:-.3px;
-}
-.logo-text span{color:var(--green)}
+.logo-name{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.logo-name em{color:var(--green);font-style:normal}
 
-.nav-section{}
-.nav-label{
-  font-size:10px;font-weight:700;letter-spacing:1.5px;
-  color:var(--text-dim);text-transform:uppercase;
-  margin-bottom:12px;padding-left:4px;
+.nav-group-label{
+  font-size:10px;font-weight:700;letter-spacing:1.4px;
+  color:var(--dim);text-transform:uppercase;
+  padding:12px 10px 4px;
 }
-.nav-item{
-  display:flex;align-items:center;gap:12px;
-  padding:10px 12px;border-radius:8px;
-  font-size:14px;font-weight:500;color:var(--text-muted);
-  cursor:pointer;transition:all .15s;
-  border:none;background:none;width:100%;text-align:left;
+.nav-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:8px;
+  font:inherit;font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;border:none;background:none;width:100%;text-align:left;
+  transition:background .12s,color .12s;
 }
-.nav-item:hover{background:var(--surface2);color:var(--text)}
-.nav-item.active{background:var(--surface3);color:var(--text)}
-.nav-item .icon{font-size:18px;width:24px;text-align:center}
+.nav-btn:hover{background:var(--surface2);color:var(--text)}
+.nav-btn.active{background:var(--surface3);color:var(--text)}
+.nav-btn .ni{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.nav-btn .badge{
+  margin-left:auto;font-size:9px;font-weight:700;
+  padding:2px 7px;border-radius:20px;letter-spacing:.4px;
+}
+.badge-green{background:rgba(29,185,84,.15);color:var(--green)}
+.badge-new{background:rgba(168,85,247,.2);color:#c084fc}
 
-.deps{
+/* folder widget in sidebar */
+.folder-widget{
   margin-top:auto;
-  padding:14px;
-  background:var(--surface2);
-  border-radius:var(--radius);
-  border:1px solid var(--border);
-}
-.deps-title{font-size:11px;color:var(--text-dim);font-weight:600;margin-bottom:8px;letter-spacing:.5px}
-.dep-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);padding:3px 0}
-.dep-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.dep-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
-.dep-dot.err{background:#f44336;box-shadow:0 0 6px #f44336}
-
-/* ===== TOPBAR ===== */
-.topbar{
-  background:linear-gradient(180deg,rgba(10,10,10,.95) 0%,rgba(10,10,10,0) 100%);
-  padding:20px 36px 0;
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:10;
-}
-.topbar-title{font-size:22px;font-weight:700;letter-spacing:-.5px}
-.folder-pill{
-  display:flex;align-items:center;gap:8px;
   background:var(--surface2);border:1px solid var(--border);
-  border-radius:30px;padding:8px 16px;
-  font-size:12px;color:var(--text-muted);cursor:pointer;
-  transition:all .2s;
+  border-radius:var(--radius);padding:12px;
 }
-.folder-pill:hover{border-color:var(--green);color:var(--text)}
-.folder-pill input{
-  background:none;border:none;outline:none;
-  font:inherit;color:inherit;width:200px;
+.folder-widget-title{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.folder-display{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:8px;padding:7px 10px;
+  font-size:11px;color:var(--muted);
+  min-height:34px;word-break:break-all;line-height:1.3;
+  cursor:default;
+}
+.folder-display .folder-icon{flex-shrink:0;font-size:14px}
+.folder-path{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.folder-actions{display:flex;gap:6px;margin-top:8px}
+.btn-folder{
+  flex:1;padding:7px 6px;border-radius:7px;font:inherit;font-size:11px;font-weight:600;
+  border:1.5px solid var(--border);background:none;color:var(--muted);cursor:pointer;
+  transition:all .15s;text-align:center;
+}
+.btn-folder:hover{border-color:var(--green);color:var(--green);background:var(--green-glow)}
+.btn-folder.primary{background:var(--green);border-color:var(--green);color:#000}
+.btn-folder.primary:hover{background:#1ed760}
+
+/* deps */
+.deps-widget{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px;margin-bottom:8px;
+}
+.deps-title{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.dep-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);padding:3px 0}
+.dep-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s,box-shadow .3s}
+.dep-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dep-dot.err{background:#f44336;box-shadow:0 0 5px #f44336}
+.dep-dot.warn{background:var(--orange);box-shadow:0 0 5px var(--orange)}
+.dep-dot.spin{background:var(--dim);animation:dep-spin .8s linear infinite}
+@keyframes dep-spin{to{box-shadow:0 0 0 3px rgba(83,83,83,.3),0 0 0 6px rgba(83,83,83,.1)}}
+.dep-install{
+  font-size:10px;color:var(--orange);margin-left:auto;cursor:pointer;
+  text-decoration:underline dotted;
 }
 
-/* ===== MAIN CONTENT ===== */
-.main{
-  padding:28px 36px 120px;
-  overflow-y:auto;
+/* ── TOPBAR ── */
+.topbar{
+  background:rgba(10,10,10,.9);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:20;
 }
+.topbar-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
 
-/* ===== TABS ===== */
-.tabs{display:flex;gap:4px;margin-bottom:32px;background:var(--surface);border-radius:12px;padding:4px;width:fit-content}
+/* ── MAIN ── */
+.main{padding:24px 28px 80px;overflow-y:auto}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:3px;background:var(--surface);border-radius:10px;padding:3px;width:fit-content;margin-bottom:24px}
 .tab{
-  padding:9px 22px;border-radius:9px;
-  font-size:13px;font-weight:600;
-  cursor:pointer;transition:all .2s;
-  border:none;background:none;color:var(--text-muted);
+  padding:8px 18px;border-radius:8px;font:inherit;font-size:12px;font-weight:600;
+  cursor:pointer;border:none;background:none;color:var(--muted);transition:all .15s;letter-spacing:.1px;
 }
-.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .tab:hover:not(.active){color:var(--text)}
 
-/* ===== PANELS ===== */
+/* ── PANELS ── */
 .panel{display:none}
-.panel.active{display:block;animation:fadeUp .25s ease}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel.active{display:block;animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* ===== CARDS ===== */
+/* ── CARDS ── */
 .card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius-lg);
-  padding:28px;
-  margin-bottom:20px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px;margin-bottom:18px;
+  transition:border-color .2s;
 }
+.card:hover{border-color:var(--border-hover)}
 .card-title{
-  font-size:13px;font-weight:700;
-  color:var(--text-muted);letter-spacing:.8px;
-  text-transform:uppercase;margin-bottom:20px;
-  display:flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:700;color:var(--muted);
+  letter-spacing:.9px;text-transform:uppercase;
+  margin-bottom:18px;display:flex;align-items:center;gap:7px;
 }
+.card-accent-green{border-color:rgba(29,185,84,.2);background:linear-gradient(135deg,#0d1a10,#0a0a0a)}
+.card-accent-spotify{border-color:rgba(29,185,84,.25);background:linear-gradient(135deg,#091a0f,#0a0a0a)}
+.card-accent-blue{border-color:rgba(61,145,255,.2);background:linear-gradient(135deg,#0a0f1a,#0a0a0a)}
+.card-accent-purple{border-color:rgba(168,85,247,.2);background:linear-gradient(135deg,#120a1a,#0a0a0a)}
 
-/* ===== INPUTS ===== */
-.input-group{margin-bottom:16px}
-.input-label{
-  display:block;font-size:12px;font-weight:600;
-  color:var(--text-muted);margin-bottom:8px;letter-spacing:.3px;
-}
+/* ── INPUTS ── */
+.field{margin-bottom:14px}
+.field-label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:7px;letter-spacing:.4px;text-transform:uppercase}
 .input{
   width:100%;background:var(--surface2);
   border:1.5px solid var(--border);border-radius:10px;
-  padding:12px 16px;font:inherit;font-size:14px;color:var(--text);
-  transition:border-color .2s,box-shadow .2s;outline:none;
+  padding:11px 14px;font:inherit;font-size:13px;color:var(--text);
+  transition:border-color .18s,box-shadow .18s;outline:none;
 }
 .input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-glow)}
-.input::placeholder{color:var(--text-dim)}
-.input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.input::placeholder{color:var(--dim)}
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-size:11px;color:var(--dim);margin-top:5px;padding-left:2px;line-height:1.5}
 
-/* ===== BUTTONS ===== */
+/* url input with icon */
+.input-with-icon{position:relative}
+.input-with-icon .input{padding-left:40px}
+.input-icon{
+  position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  font-size:16px;pointer-events:none;
+}
+
+/* ── BUTTONS ── */
 .btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:13px 28px;border-radius:30px;
-  font:inherit;font-size:14px;font-weight:700;
-  cursor:pointer;border:none;transition:all .2s;letter-spacing:.2px;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:11px 24px;border-radius:30px;
+  font:inherit;font-size:13px;font-weight:700;
+  cursor:pointer;border:none;transition:all .18s;letter-spacing:.1px;
+  white-space:nowrap;
 }
 .btn-green{background:var(--green);color:#000}
-.btn-green:hover{background:#1ed760;transform:scale(1.03)}
-.btn-green:active{transform:scale(.98)}
+.btn-green:hover{background:#1ed760;transform:scale(1.02)}
+.btn-green:active{transform:scale(.97)}
+.btn-spotify{background:var(--spotify);color:#000}
+.btn-spotify:hover{background:#1ed760;transform:scale(1.02)}
 .btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
-.btn-outline:hover{border-color:var(--text);background:var(--surface2)}
+.btn-outline:hover{border-color:var(--muted);background:var(--surface2)}
 .btn-orange{background:var(--orange);color:#fff}
 .btn-orange:hover{filter:brightness(1.1);transform:scale(1.02)}
 .btn-red{background:#e22134;color:#fff}
 .btn-red:hover{filter:brightness(1.1)}
-.btn-sm{padding:9px 18px;font-size:12px}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
-.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.btn-sm{padding:8px 16px;font-size:12px}
+.btn-xs{padding:5px 12px;font-size:11px}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;filter:none!important}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 
-/* ===== TRACK LIST ===== */
+/* ── TRACK LIST ── */
 .track-list{
   background:var(--surface2);border-radius:var(--radius);
-  overflow:hidden;margin:16px 0;
-  border:1px solid var(--border);
-  max-height:300px;overflow-y:auto;
+  border:1px solid var(--border);max-height:280px;overflow-y:auto;margin:14px 0;
 }
 .track-item{
-  display:flex;align-items:center;gap:14px;
-  padding:11px 16px;border-bottom:1px solid var(--border);
-  transition:background .15s;font-size:13px;
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  transition:background .12s;font-size:12px;
 }
 .track-item:last-child{border-bottom:none}
 .track-item:hover{background:var(--surface3)}
-.track-num{color:var(--text-dim);font-size:12px;min-width:24px;text-align:right;font-variant-numeric:tabular-nums}
-.track-name{flex:1;color:var(--text-muted)}
-.track-status{font-size:16px}
+.t-num{color:var(--dim);font-size:11px;min-width:22px;text-align:right;font-variant-numeric:tabular-nums}
+.t-name{flex:1;color:var(--muted)}
 
-/* ===== PROGRESS AREA ===== */
-.progress-card{
-  background:linear-gradient(135deg,#0f1f14 0%,#0a0a0a 100%);
-  border:1px solid rgba(29,185,84,.2);
-}
-.now-playing{
-  display:flex;align-items:center;gap:16px;
-  margin-bottom:20px;
-}
+/* ── PROGRESS ── */
+.prog-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.now-row{display:flex;align-items:center;gap:14px;margin-bottom:18px}
 .np-art{
-  width:52px;height:52px;border-radius:8px;
-  background:linear-gradient(135deg,var(--green),var(--green-dim));
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;flex-shrink:0;
-  animation:pulse-art 2s infinite alternate;
+  width:48px;height:48px;border-radius:8px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--green),var(--green-dark));
+  display:flex;align-items:center;justify-content:center;font-size:20px;
 }
-@keyframes pulse-art{from{box-shadow:0 0 10px var(--green-glow)}to{box-shadow:0 0 30px rgba(29,185,84,.4)}}
-.np-info{}
-.np-title{font-size:15px;font-weight:700;margin-bottom:3px}
-.np-sub{font-size:12px;color:var(--text-muted)}
+.np-art.active{animation:art-pulse 2s ease infinite alternate}
+@keyframes art-pulse{from{box-shadow:0 0 8px var(--green-glow)}to{box-shadow:0 0 28px rgba(29,185,84,.5)}}
+.np-title{font-size:14px;font-weight:700;margin-bottom:3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px}
+.np-path{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px}
 
-.progress-track{height:4px;background:var(--surface3);border-radius:4px;overflow:hidden;margin:16px 0 8px}
-.progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width .4s ease;box-shadow:0 0 8px var(--green)}
-.progress-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)}
+.prog-track{height:4px;background:var(--surface3);border-radius:4px;overflow:hidden;margin:14px 0 6px}
+.prog-fill{height:100%;background:var(--green);border-radius:4px;transition:width .5s ease;box-shadow:0 0 6px var(--green)}
+.prog-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--dim)}
 
-.stats-row{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;
-}
-.stat-box{
-  background:var(--surface2);border-radius:10px;padding:14px;text-align:center;
-  border:1px solid var(--border);
-}
-.stat-val{font-size:24px;font-weight:700;line-height:1}
-.stat-val.green{color:var(--green)}
-.stat-val.red{color:#f44336}
-.stat-val.blue{color:var(--blue)}
-.stat-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+.pause-track{height:2px;background:var(--surface3);border-radius:4px;overflow:hidden;margin:6px 0}
+.pause-fill{height:100%;background:var(--orange);border-radius:4px;transition:width .9s linear}
 
-.pause-bar{height:2px;background:var(--surface3);border-radius:4px;overflow:hidden;margin:8px 0}
-.pause-fill{height:100%;background:var(--orange);border-radius:4px;transition:width .8s linear}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.stat{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.stat-n{font-size:26px;font-weight:700;line-height:1}
+.stat-n.g{color:var(--green)}.stat-n.r{color:#f44336}.stat-n.b{color:var(--blue)}
+.stat-l{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
 
-/* ===== LOG ===== */
+.divider{height:1px;background:var(--border);margin:18px 0}
+
+.log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
 .log-box{
-  background:#0d0d0d;border-radius:10px;
-  border:1px solid var(--border);
-  height:140px;overflow-y:auto;
-  padding:12px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;
-  line-height:1.7;
+  background:#080808;border-radius:9px;border:1px solid var(--border);
+  height:130px;overflow-y:auto;padding:10px 12px;
+  font-family:'SF Mono','Fira Code',monospace;font-size:10.5px;line-height:1.75;
 }
-.log-line{color:var(--text-dim)}
-.log-line.success{color:#4caf50}
-.log-line.error{color:#f44336}
-.log-line.warning{color:#ff9800}
+.ll{color:var(--dim)}
+.ll.success{color:#4caf50}.ll.error{color:#f44336}.ll.warning{color:#ff9800}
 
-/* ===== STATUS BADGE ===== */
-.status-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;
-  letter-spacing:.5px;text-transform:uppercase;
+/* status badge */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 11px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
 }
-.badge-idle{background:var(--surface3);color:var(--text-dim)}
-.badge-downloading{background:rgba(29,185,84,.15);color:var(--green);border:1px solid rgba(29,185,84,.3)}
-.badge-downloading::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1s infinite}
-.badge-pausing{background:rgba(255,100,55,.15);color:var(--orange);border:1px solid rgba(255,100,55,.3)}
-.badge-done{background:rgba(29,185,84,.2);color:var(--green)}
-.badge-stopped{background:rgba(244,67,54,.15);color:#f44336}
-.badge-error{background:rgba(244,67,54,.15);color:#f44336}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.b-idle{background:var(--surface3);color:var(--dim)}
+.b-dl{background:rgba(29,185,84,.12);color:var(--green);border:1px solid rgba(29,185,84,.25)}
+.b-dl::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1s infinite}
+.b-pause{background:rgba(255,100,55,.12);color:var(--orange);border:1px solid rgba(255,100,55,.25)}
+.b-done{background:rgba(29,185,84,.18);color:var(--green)}
+.b-stop{background:rgba(244,67,54,.12);color:#f44336}
+.b-err{background:rgba(244,67,54,.12);color:#f44336}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
-/* ===== SCROLLBAR ===== */
+/* info grid for supported sites */
+.sites-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px}
+.site-chip{
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:7px;padding:8px 10px;font-size:11px;color:var(--muted);
+  display:flex;align-items:center;gap:6px;
+}
+.site-chip .si{font-size:14px}
+
+/* ── QUEUE ── */
+.queue-empty{
+  text-align:center;padding:24px 16px;
+  color:var(--dim);font-size:12px;
+}
+.queue-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  transition:background .12s;
+  animation:fadeUp .2s ease;
+}
+.queue-item:last-child{border-bottom:none}
+.queue-item:hover{background:var(--surface3)}
+.qi-pos{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--surface3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:var(--dim);flex-shrink:0;
+}
+.qi-icon{font-size:16px;flex-shrink:0}
+.qi-label{flex:1;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qi-remove{
+  width:22px;height:22px;border-radius:50%;
+  background:none;border:1px solid var(--border);
+  color:var(--dim);font-size:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .15s;
+}
+.qi-remove:hover{background:#e221341a;border-color:#e22134;color:#e22134}
+.queue-list{
+  background:var(--surface2);border-radius:var(--radius);
+  border:1px solid var(--border);max-height:260px;overflow-y:auto;
+}
+.queue-count-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--orange);color:#fff;
+  font-size:10px;font-weight:700;margin-left:auto;
+}
+
+/* scrollbar */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:10px}
 ::-webkit-scrollbar-thumb:hover{background:var(--border)}
 
-/* ===== TOAST ===== */
-.toast-container{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;gap:8px}
+/* toast */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:7px;pointer-events:none}
 .toast{
   background:var(--surface3);border:1px solid var(--border);
-  border-radius:10px;padding:12px 18px;font-size:13px;
-  animation:slideIn .3s ease;box-shadow:0 8px 32px rgba(0,0,0,.5);
-  display:flex;align-items:center;gap:8px;
+  border-radius:10px;padding:11px 16px;font-size:12px;font-weight:500;
+  box-shadow:0 8px 28px rgba(0,0,0,.6);
+  animation:t-in .25s ease;pointer-events:all;
+  display:flex;align-items:center;gap:8px;max-width:300px;
 }
-@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.toast.success{border-color:rgba(29,185,84,.4);color:var(--green)}
-.toast.error{border-color:rgba(244,67,54,.4);color:#f44336}
+@keyframes t-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.toast.success{border-color:rgba(29,185,84,.35);color:var(--green)}
+.toast.error{border-color:rgba(244,67,54,.35);color:#f44336}
+.toast.warn{border-color:rgba(255,100,55,.35);color:var(--orange)}
 
-/* ===== HINT ===== */
-.hint{font-size:12px;color:var(--text-dim);margin-top:6px;padding-left:2px}
-
-/* ===== DIVIDER ===== */
-.divider{height:1px;background:var(--border);margin:20px 0}
-
-/* ===== FOOTER ===== */
+/* ── FOOTER BAR ── */
 .footer{
-  grid-column:2;
-  background:var(--surface);border-top:1px solid var(--border);
-  padding:0 36px;height:72px;
+  grid-column:2;background:rgba(17,17,17,.95);backdrop-filter:blur(10px);
+  border-top:1px solid var(--border);
+  padding:0 28px;height:60px;
   display:flex;align-items:center;justify-content:space-between;
-  position:sticky;bottom:0;
+  position:sticky;bottom:0;z-index:20;
 }
-.footer-left{display:flex;align-items:center;gap:16px}
-.footer-track{font-size:13px;font-weight:600}
-.footer-sub{font-size:11px;color:var(--text-muted)}
+.footer-info{overflow:hidden}
+.footer-track{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px}
+.footer-sub{font-size:11px;color:var(--dim);margin-top:1px}
 
-/* responsive */
-@media(max-width:768px){
-  .layout{grid-template-columns:1fr}
+/* spotify color overrides */
+.spotify-green{color:var(--spotify)!important}
+
+@media(max-width:760px){
+  .layout{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .sidebar{display:none}
-  .main{padding:20px 16px 100px}
-  .topbar{padding:16px 16px 0}
-  .input-row{grid-template-columns:1fr}
-  .stats-row{grid-template-columns:repeat(3,1fr)}
+  .main{padding:16px 16px 80px}
+  .topbar{padding:0 16px}
+  .input-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
 }
 </style>
 </head>
 <body>
-
 <div class="layout">
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="logo">
-      <div class="logo-icon">🎵</div>
-      <div class="logo-text">Music<span>Load</span></div>
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">🎵</div>
+    <div class="logo-name">Music<em>Load</em></div>
+  </div>
+
+  <div class="nav-group-label">Scarica</div>
+  <button class="nav-btn active" id="nav-single" onclick="switchTab('single')">
+    <span class="ni">🎵</span> Singola canzone
+  </button>
+  <button class="nav-btn" id="nav-album" onclick="switchTab('album')">
+    <span class="ni">💿</span> Album
+  </button>
+  <button class="nav-btn" id="nav-playlist" onclick="switchTab('playlist')">
+    <span class="ni">📋</span> Playlist YouTube
+  </button>
+  <button class="nav-btn" id="nav-spotify" onclick="switchTab('spotify')">
+    <span class="ni">🟢</span> Spotify
+    <span class="badge badge-new">NEW</span>
+  </button>
+
+  <div class="nav-group-label" style="margin-top:8px">Stato</div>
+  <button class="nav-btn" id="nav-progress" onclick="switchTab('progress')">
+    <span class="ni">📊</span> Progresso
+    <span class="badge badge-green" id="nav-prog-badge" style="display:none">▶</span>
+  </button>
+  <button class="nav-btn" id="nav-queue" onclick="switchTab('queue')">
+    <span class="ni">📋</span> Coda download
+    <span class="queue-count-badge" id="nav-queue-count" style="display:none">0</span>
+  </button>
+
+  <!-- deps -->
+  <div class="deps-widget" style="margin-top:auto">
+    <div class="deps-title">Dipendenze</div>
+    <div class="dep-row"><div class="dep-dot spin" id="dot-ytdlp"></div><span>yt-dlp</span></div>
+    <div class="dep-row"><div class="dep-dot spin" id="dot-ffmpeg"></div><span>FFmpeg</span></div>
+    <div class="dep-row">
+      <div class="dep-dot spin" id="dot-spotdl"></div><span>spotdl</span>
+      <span class="dep-install" id="spotdl-install-btn" style="display:none" onclick="installSpotdl()">installa</span>
     </div>
+  </div>
 
-    <nav class="nav-section">
-      <div class="nav-label">Modalità</div>
-      <button class="nav-item active" onclick="switchTab('single')" id="nav-single">
-        <span class="icon">🎵</span> Singola canzone
-      </button>
-      <button class="nav-item" onclick="switchTab('album')" id="nav-album">
-        <span class="icon">💿</span> Album
-      </button>
-      <button class="nav-item" onclick="switchTab('playlist')" id="nav-playlist">
-        <span class="icon">🔗</span> Playlist / URL
-      </button>
-    </nav>
-
-    <nav class="nav-section">
-      <div class="nav-label">Download</div>
-      <button class="nav-item" onclick="switchTab('progress')" id="nav-progress">
-        <span class="icon">📊</span> Progresso
-      </button>
-    </nav>
-
-    <div class="deps" id="deps-box">
-      <div class="deps-title">DIPENDENZE</div>
-      <div class="dep-row"><div class="dep-dot" id="dot-ytdlp"></div><span>yt-dlp</span></div>
-      <div class="dep-row"><div class="dep-dot" id="dot-ffmpeg"></div><span>FFmpeg</span></div>
+  <!-- folder widget -->
+  <div class="folder-widget">
+    <div class="folder-widget-title">📁 Cartella download</div>
+    <div class="folder-display" id="folder-display">
+      <span class="folder-icon">📂</span>
+      <span class="folder-path" id="folder-path-display">Caricamento...</span>
     </div>
-  </aside>
-
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="topbar-title" id="topbar-title">Singola Canzone</div>
-    <div class="folder-pill" title="Cartella di destinazione">
-      📁 <input type="text" id="folder-input" placeholder="Cartella download..." oninput="updateFolder()" />
+    <div class="folder-actions">
+      <button class="btn-folder" onclick="browseFolder()">📂 Sfoglia</button>
+      <button class="btn-folder" onclick="showFolderInput()">✏️ Digita</button>
     </div>
-  </header>
+    <!-- manual input, hidden by default -->
+    <div id="folder-manual" style="display:none;margin-top:8px">
+      <input class="input" id="folder-input" type="text" placeholder="Percorso cartella..."
+        onkeydown="if(event.key==='Enter')saveManualFolder()" style="font-size:12px;padding:8px 12px"/>
+      <div class="folder-actions" style="margin-top:6px">
+        <button class="btn-folder primary" onclick="saveManualFolder()">✓ Salva</button>
+        <button class="btn-folder" onclick="hideManualFolder()">✕</button>
+      </div>
+    </div>
+  </div>
+</aside>
 
-  <!-- MAIN -->
-  <main class="main">
+<!-- ══ TOPBAR ══ -->
+<header class="topbar">
+  <div class="topbar-title" id="topbar-title">Singola Canzone</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="badge b-idle" id="topbar-badge">IDLE</div>
+  </div>
+</header>
 
-    <!-- SINGLE -->
-    <div class="panel active" id="panel-single">
-      <div class="card">
-        <div class="card-title">🎵 Cerca e scarica una canzone</div>
-        <div class="input-group">
-          <label class="input-label">NOME CANZONE O QUERY</label>
+<!-- ══ MAIN ══ -->
+<main class="main">
+
+  <!-- ── SINGLE ── -->
+  <div class="panel active" id="panel-single">
+    <div class="card">
+      <div class="card-title">🎵 Cerca e scarica una canzone</div>
+      <div class="field">
+        <label class="field-label">Canzone o URL YouTube</label>
+        <div class="input-with-icon">
+          <span class="input-icon">🔍</span>
           <input class="input" id="single-query" type="text"
-            placeholder="es. Bohemian Rhapsody Queen, oppure incolla un URL YouTube"
+            placeholder="es. Bohemian Rhapsody Queen  —  oppure incolla un URL YouTube"
             onkeydown="if(event.key==='Enter')startSingle()"/>
-          <div class="hint">Puoi scrivere nome artista + canzone, oppure incollare direttamente un link YouTube</div>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-green" onclick="startSingle()">▶ Scarica</button>
-          <button class="btn btn-outline btn-sm" onclick="pasteToInput('single-query')">📋 Incolla</button>
+        <div class="hint">Cerca per nome artista + canzone, o incolla un link YouTube diretto</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="startSingle()">▶ Scarica</button>
+        <button class="btn btn-outline btn-sm" onclick="pasteInput('single-query')">📋 Incolla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ALBUM ── -->
+  <div class="panel" id="panel-album">
+    <div class="card">
+      <div class="card-title">💿 Scarica album completo</div>
+      <div class="input-grid">
+        <div class="field">
+          <label class="field-label">Nome Album</label>
+          <input class="input" id="album-name" type="text" placeholder="es. The Dark Side of the Moon"/>
         </div>
+        <div class="field">
+          <label class="field-label">Artista (opzionale)</label>
+          <input class="input" id="album-artist" type="text" placeholder="es. Pink Floyd"/>
+        </div>
+      </div>
+      <div class="field" style="max-width:220px">
+        <label class="field-label">Pausa tra tracce</label>
+        <select class="input" id="album-pause">
+          <option value="5">5 secondi</option>
+          <option value="10" selected>10 secondi</option>
+          <option value="15">15 secondi</option>
+          <option value="20">20 secondi</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-orange" onclick="searchAlbum()" id="btn-search">🔍 Cerca tracce su Google</button>
       </div>
     </div>
 
-    <!-- ALBUM -->
-    <div class="panel" id="panel-album">
-      <div class="card">
-        <div class="card-title">💿 Scarica album completo</div>
-        <div class="input-row">
-          <div class="input-group">
-            <label class="input-label">NOME ALBUM</label>
-            <input class="input" id="album-name" type="text" placeholder="es. The Dark Side of the Moon"/>
-          </div>
-          <div class="input-group">
-            <label class="input-label">ARTISTA (opzionale)</label>
-            <input class="input" id="album-artist" type="text" placeholder="es. Pink Floyd"/>
-          </div>
-        </div>
-        <div class="input-group">
-          <label class="input-label">PAUSA TRA TRACCE (secondi)</label>
-          <select class="input" id="album-pause" style="appearance:auto;cursor:pointer">
-            <option value="5">5 secondi</option>
-            <option value="10" selected>10 secondi</option>
-            <option value="15">15 secondi</option>
-            <option value="20">20 secondi</option>
-          </select>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-orange" onclick="searchAlbum()" id="btn-search-album">🔍 Cerca tracce su Google</button>
-        </div>
-      </div>
-
-      <div class="card" id="tracklist-card" style="display:none">
-        <div class="card-title" id="tracklist-title">📋 Tracce trovate</div>
-        <div class="track-list" id="track-list-container"></div>
-        <div class="btn-row">
-          <button class="btn btn-green" onclick="startAlbum()">▶ Scarica tutto</button>
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('tracklist-card').style.display='none'">✕ Chiudi</button>
-        </div>
+    <div class="card" id="tracklist-card" style="display:none">
+      <div class="card-title" id="tracklist-title">📋 Tracce trovate</div>
+      <div class="track-list" id="track-list"></div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="startAlbum()">▶ Scarica tutto</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('tracklist-card').style.display='none'">✕ Chiudi</button>
       </div>
     </div>
+  </div>
 
-    <!-- PLAYLIST URL -->
-    <div class="panel" id="panel-playlist">
-      <div class="card">
-        <div class="card-title">🔗 Playlist o URL diretto</div>
-        <div class="input-group">
-          <label class="input-label">URL YOUTUBE / PLAYLIST / CANALE</label>
+  <!-- ── PLAYLIST YOUTUBE ── -->
+  <div class="panel" id="panel-playlist">
+    <div class="card card-accent-blue">
+      <div class="card-title" style="color:var(--blue)">📋 Playlist YouTube / URL diretto</div>
+      <div class="field">
+        <label class="field-label">URL</label>
+        <div class="input-with-icon">
+          <span class="input-icon">🔗</span>
           <input class="input" id="playlist-url" type="text"
             placeholder="https://www.youtube.com/playlist?list=..."
             onkeydown="if(event.key==='Enter')startPlaylist()"/>
-          <div class="hint">Supporta: playlist YouTube, video singoli, canali, SoundCloud e altri siti supportati da yt-dlp</div>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-green" onclick="startPlaylist()">▶ Scarica playlist</button>
-          <button class="btn btn-outline btn-sm" onclick="pasteToInput('playlist-url')">📋 Incolla URL</button>
-        </div>
+        <div class="hint">Incolla link a playlist, canale YouTube, video singolo, SoundCloud, Bandcamp ecc.</div>
       </div>
-
-      <div class="card" style="background:linear-gradient(135deg,#0f0f1a,#0a0a0a);border-color:rgba(61,145,255,.2)">
-        <div class="card-title" style="color:var(--blue)">💡 Siti supportati</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;font-size:12px;color:var(--text-muted)">
-          <span>▸ YouTube</span><span>▸ YouTube Music</span><span>▸ SoundCloud</span>
-          <span>▸ Bandcamp</span><span>▸ Vimeo</span><span>▸ Twitch</span>
-          <span>▸ Dailymotion</span><span>▸ Reddit</span><span>▸ Twitter/X</span>
-        </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="startPlaylist()">▶ Scarica playlist</button>
+        <button class="btn btn-outline btn-sm" onclick="pasteInput('playlist-url')">📋 Incolla URL</button>
       </div>
     </div>
 
-    <!-- PROGRESS -->
-    <div class="panel" id="panel-progress">
-      <div class="card progress-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-          <div class="card-title" style="margin:0">📊 Stato download</div>
-          <div class="status-badge badge-idle" id="status-badge">INATTIVO</div>
-        </div>
+    <div class="card card-accent-blue">
+      <div class="card-title" style="color:var(--blue)">💡 Siti supportati da yt-dlp</div>
+      <div class="sites-grid">
+        <div class="site-chip"><span class="si">▶</span>YouTube</div>
+        <div class="site-chip"><span class="si">🎵</span>YT Music</div>
+        <div class="site-chip"><span class="si">☁️</span>SoundCloud</div>
+        <div class="site-chip"><span class="si">🎸</span>Bandcamp</div>
+        <div class="site-chip"><span class="si">📹</span>Vimeo</div>
+        <div class="site-chip"><span class="si">🎮</span>Twitch</div>
+        <div class="site-chip"><span class="si">📺</span>Dailymotion</div>
+        <div class="site-chip"><span class="si">🐦</span>Twitter/X</div>
+        <div class="site-chip"><span class="si">📱</span>Instagram</div>
+      </div>
+    </div>
+  </div>
 
-        <div class="now-playing" id="now-playing-row">
-          <div class="np-art" id="np-art">🎵</div>
-          <div class="np-info">
-            <div class="np-title" id="np-title">In attesa...</div>
-            <div class="np-sub" id="np-sub">Nessun download attivo</div>
+  <!-- ── SPOTIFY ── -->
+  <div class="panel" id="panel-spotify">
+    <div class="card card-accent-spotify">
+      <div class="card-title" style="color:var(--spotify)">🟢 Download da Spotify</div>
+      <div class="field">
+        <label class="field-label">Link Spotify</label>
+        <div class="input-with-icon">
+          <span class="input-icon">🟢</span>
+          <input class="input" id="spotify-url" type="text"
+            placeholder="https://open.spotify.com/playlist/..."
+            onkeydown="if(event.key==='Enter')startSpotify()"/>
+        </div>
+        <div class="hint">Supporta: playlist, album, artista, canzone. Copia il link da Spotify → Condividi → Copia link.</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-spotify" onclick="startSpotify()">🟢 Scarica da Spotify</button>
+        <button class="btn btn-outline btn-sm" onclick="pasteInput('spotify-url')">📋 Incolla URL</button>
+      </div>
+    </div>
+
+    <div class="card card-accent-purple">
+      <div class="card-title" style="color:#c084fc">⚙️ Come funziona</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.75">
+        <p>Questa modalità usa <strong style="color:#fff">spotdl</strong>, un tool open-source che:</p>
+        <ul style="list-style:none;padding:0;margin-top:10px;display:flex;flex-direction:column;gap:6px">
+          <li>🔑 Non richiede account Spotify o API keys</li>
+          <li>🔍 Legge la tracklist dalla pagina Spotify pubblica</li>
+          <li>▶ Scarica l'audio da YouTube al massimo della qualità</li>
+          <li>🏷️ Aggiunge automaticamente tag ID3 (artista, album, copertina)</li>
+          <li>📦 Si installa automaticamente al primo utilizzo</li>
+        </ul>
+        <div style="margin-top:14px;padding:10px;background:var(--surface3);border-radius:8px;font-size:12px;color:var(--dim)">
+          Dipendenza: <code style="color:var(--spotify)">spotdl</code> — status visibile nella sidebar.
+          Se non rilevato, viene installato automaticamente all'avvio del download.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PROGRESS ── -->
+  <div class="panel" id="panel-progress">
+    <div class="card card-accent-green">
+      <div class="prog-header">
+        <div class="card-title" style="margin:0">📊 Stato download</div>
+        <div class="badge b-idle" id="status-badge">INATTIVO</div>
+      </div>
+
+      <div class="now-row">
+        <div class="np-art" id="np-art">🎵</div>
+        <div style="overflow:hidden">
+          <div class="np-title" id="np-title">In attesa...</div>
+          <div class="np-path" id="np-path">—</div>
+        </div>
+      </div>
+
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="prog-labels">
+        <span id="prog-left">0 / 0 tracce</span>
+        <span id="prog-pct">0%</span>
+      </div>
+      <div class="pause-track"><div class="pause-fill" id="pause-fill" style="width:0%"></div></div>
+
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-n g" id="s-ok">0</div><div class="stat-l">Successo</div></div>
+        <div class="stat"><div class="stat-n r" id="s-err">0</div><div class="stat-l">Errori</div></div>
+        <div class="stat"><div class="stat-n b" id="s-tot">0</div><div class="stat-l">Totale</div></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="log-header">
+        <span style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.6px">Log</span>
+        <button class="btn btn-outline btn-xs" onclick="clearLog()">Pulisci</button>
+      </div>
+      <div class="log-box" id="log-box"></div>
+
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopDownload()" style="display:none">⏹ Ferma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── QUEUE ── -->
+  <div class="panel" id="panel-queue">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div class="card-title" style="margin:0">📋 Coda download</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-red btn-sm" onclick="clearQueue()" id="btn-clear-queue">🗑️ Svuota coda</button>
+        </div>
+      </div>
+
+      <!-- currently active -->
+      <div id="queue-active-row" style="display:none;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">▶ In corso</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(29,185,84,.06);border:1px solid rgba(29,185,84,.2);border-radius:10px">
+          <div class="np-art" id="queue-active-art" style="width:36px;height:36px;font-size:16px">🎵</div>
+          <div style="overflow:hidden">
+            <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="queue-active-title">—</div>
+            <div style="font-size:11px;color:var(--dim)" id="queue-active-sub">—</div>
           </div>
-        </div>
-
-        <div class="progress-track">
-          <div class="progress-fill" id="progress-fill" style="width:0%"></div>
-        </div>
-        <div class="progress-labels">
-          <span id="prog-left">0 / 0 tracce</span>
-          <span id="prog-pct">0%</span>
-        </div>
-
-        <div class="pause-bar"><div class="pause-fill" id="pause-fill" style="width:0%"></div></div>
-
-        <div class="stats-row">
-          <div class="stat-box"><div class="stat-val green" id="stat-success">0</div><div class="stat-label">Successo</div></div>
-          <div class="stat-box"><div class="stat-val red" id="stat-errors">0</div><div class="stat-label">Errori</div></div>
-          <div class="stat-box"><div class="stat-val blue" id="stat-total">0</div><div class="stat-label">Totale</div></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase">Log</span>
-          <button class="btn btn-outline btn-sm" onclick="clearLog()" style="padding:4px 10px;font-size:11px">Pulisci</button>
-        </div>
-        <div class="log-box" id="log-box"></div>
-
-        <div class="btn-row" style="margin-top:16px">
-          <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopDownload()" style="display:none">⏹ Ferma</button>
-          <button class="btn btn-outline btn-sm" onclick="openFolder()">📂 Apri cartella</button>
+          <div class="badge b-dl" style="margin-left:auto;flex-shrink:0">SCARICANDO</div>
         </div>
       </div>
-    </div>
 
-  </main>
+      <!-- pending queue list -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px" id="queue-pending-label">In attesa</div>
+      <div class="queue-list" id="queue-list">
+        <div class="queue-empty">Nessun download in coda</div>
+      </div>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-left">
-      <div>
-        <div class="footer-track" id="footer-track">In attesa</div>
-        <div class="footer-sub" id="footer-sub">Nessun download</div>
+      <div style="margin-top:12px;font-size:11px;color:var(--dim)" id="queue-hint">
+        Aggiungi download da qualsiasi tab — verranno eseguiti in sequenza automaticamente.
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <div class="status-badge badge-idle" id="footer-badge">IDLE</div>
-    </div>
-  </footer>
+  </div>
 
-</div>
+</main>
 
-<div class="toast-container" id="toast-container"></div>
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-info">
+    <div class="footer-track" id="footer-track">In attesa</div>
+    <div class="footer-sub" id="footer-sub">Nessun download in corso</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="badge b-idle" id="footer-badge">IDLE</div>
+  </div>
+</footer>
+
+</div><!-- /layout -->
+
+<div class="toast-wrap" id="toasts"></div>
 
 <script>
-// ===== STATE =====
-let pendingTracks = [];
-let pendingArtist = '';
-let pollInterval = null;
-let lastLogLen = 0;
-let pauseFillAnim = null;
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let pendingTracks = [], pendingArtist = '';
+let pollTimer = null, lastLogLen = 0;
+let currentFolder = localStorage.getItem('dl_folder') || '';
+const MODE_ICON = {single:'🎵', album:'💿', playlist_url:'📋', spotify:'🟢'};
 
-// ===== INIT =====
-window.onload = () => {
-  const defaultFolder = localStorage.getItem('dl_folder') || '';
-  document.getElementById('folder-input').value = defaultFolder;
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+window.onload = async () => {
   checkDeps();
   startPolling();
+  try {
+    const r = await fetch('/api/check_deps');
+    const d = await r.json();
+    if (d.current_folder) setFolderDisplay(d.current_folder);
+    else if (currentFolder) setFolderDisplay(currentFolder);
+  } catch {}
 };
 
-// ===== TABS =====
-function switchTab(tab) {
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+const TITLES = {single:'Singola Canzone',album:'Album',playlist:'Playlist YouTube',spotify:'Spotify',progress:'Progresso',queue:'Coda Download'};
+function switchTab(t) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('panel-' + tab).classList.add('active');
-  document.getElementById('nav-' + tab)?.classList.add('active');
-  const titles = {single:'Singola Canzone',album:'Album',playlist:'Playlist / URL',progress:'Progresso Download'};
-  document.getElementById('topbar-title').textContent = titles[tab] || '';
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  document.getElementById('nav-'+t)?.classList.add('active');
+  document.getElementById('topbar-title').textContent = TITLES[t] || '';
 }
 
-// ===== FOLDER =====
-function updateFolder() {
-  const f = document.getElementById('folder-input').value.trim();
-  localStorage.setItem('dl_folder', f);
-  if (f) fetch('/api/set_folder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({folder:f})});
+// ═══════════════════════════════════════
+// FOLDER MANAGEMENT
+// ═══════════════════════════════════════
+function setFolderDisplay(path) {
+  currentFolder = path;
+  localStorage.setItem('dl_folder', path);
+  const display = document.getElementById('folder-path-display');
+  display.textContent = path;
+  display.title = path;
+  document.getElementById('folder-input').value = path;
 }
 
-// ===== PASTE =====
-async function pasteToInput(id) {
+async function browseFolder() {
+  toast('📂 Apertura dialogo cartella...', 'info');
+  try {
+    const r = await fetch('/api/browse_folder', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({initial: currentFolder})
+    });
+    const d = await r.json();
+    if (d.ok && d.folder) {
+      setFolderDisplay(d.folder);
+      toast('✅ Cartella aggiornata!', 'success');
+    } else {
+      toast('Nessuna cartella selezionata', 'warn');
+    }
+  } catch (e) {
+    toast('Errore apertura dialogo: ' + e, 'error');
+  }
+}
+
+function showFolderInput() {
+  document.getElementById('folder-manual').style.display = 'block';
+  document.getElementById('folder-input').focus();
+  document.getElementById('folder-input').select();
+}
+function hideManualFolder() {
+  document.getElementById('folder-manual').style.display = 'none';
+}
+async function saveManualFolder() {
+  const path = document.getElementById('folder-input').value.trim();
+  if (!path) return;
+  try {
+    const r = await fetch('/api/set_folder', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({folder: path})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      setFolderDisplay(d.folder);
+      hideManualFolder();
+      toast('✅ Cartella salvata!', 'success');
+    } else {
+      toast('❌ ' + (d.error || 'Percorso non valido'), 'error');
+    }
+  } catch {
+    toast('Errore di rete', 'error');
+  }
+}
+
+// ═══════════════════════════════════════
+// PASTE
+// ═══════════════════════════════════════
+async function pasteInput(id) {
   try {
     const t = await navigator.clipboard.readText();
     document.getElementById(id).value = t;
-    toast('📋 Incollato!','success');
+    toast('📋 Incollato!', 'success');
   } catch {
-    toast('❌ Permesso clipboard negato. Usa Ctrl+V','error');
+    toast('Premi Ctrl+V per incollare', 'warn');
   }
 }
 
-// ===== SINGLE DOWNLOAD =====
+// ═══════════════════════════════════════
+// SINGLE
+// ═══════════════════════════════════════
 function startSingle() {
   const q = document.getElementById('single-query').value.trim();
-  if (!q) { toast('Inserisci una canzone!','error'); return; }
-  const folder = document.getElementById('folder-input').value.trim();
-  fetch('/api/download',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({mode:'single',query:q,folder})
-  }).then(r=>r.json()).then(d=>{
-    if(d.error){toast(d.error,'error');return;}
-    toast('▶ Download avviato!','success');
-    switchTab('progress');
-    startPolling();
-  });
+  if (!q) { toast('Inserisci una canzone!', 'error'); return; }
+  startDownload({mode:'single', query:q});
 }
 
-// ===== ALBUM SEARCH =====
+// ═══════════════════════════════════════
+// ALBUM
+// ═══════════════════════════════════════
 async function searchAlbum() {
   const album = document.getElementById('album-name').value.trim();
   const artist = document.getElementById('album-artist').value.trim();
-  if (!album) { toast('Inserisci il nome dell\'album!','error'); return; }
-  const btn = document.getElementById('btn-search-album');
-  btn.disabled = true; btn.textContent = '⏳ Cerco...';
+  if (!album) { toast('Inserisci il nome dell\'album!', 'error'); return; }
+  const btn = document.getElementById('btn-search');
+  btn.disabled = true; btn.textContent = '⏳ Cerco su Google...';
   try {
-    const r = await fetch('/api/search_album',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({album,artist})
+    const r = await fetch('/api/search_album', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({album, artist})
     });
     const d = await r.json();
     btn.disabled = false; btn.textContent = '🔍 Cerca tracce su Google';
-    if (d.error||!d.tracks?.length){toast('Nessuna traccia trovata','error');return;}
+    if (!d.tracks?.length) { toast('Nessuna traccia trovata', 'error'); return; }
     pendingTracks = d.tracks;
     pendingArtist = artist;
-    showTracklist(d.tracks, album, artist);
-  } catch(e){
-    btn.disabled=false; btn.textContent='🔍 Cerca tracce su Google';
-    toast('Errore di rete','error');
+    renderTracklist(d.tracks, album, artist);
+  } catch {
+    btn.disabled = false; btn.textContent = '🔍 Cerca tracce su Google';
+    toast('Errore di rete', 'error');
   }
 }
 
-function showTracklist(tracks, album, artist) {
-  const card = document.getElementById('tracklist-card');
-  const title = document.getElementById('tracklist-title');
-  const list = document.getElementById('track-list-container');
-  title.textContent = `📋 ${album}${artist?' — '+artist:''} · ${tracks.length} tracce`;
+function renderTracklist(tracks, album, artist) {
+  document.getElementById('tracklist-title').textContent =
+    `📋 ${album}${artist ? ' — '+artist : ''} · ${tracks.length} tracce`;
+  const list = document.getElementById('track-list');
   list.innerHTML = '';
-  tracks.forEach((t,i) => {
-    const row = document.createElement('div');
-    row.className = 'track-item';
-    row.innerHTML = `<span class="track-num">${i+1}</span><span class="track-name">${t}</span><span class="track-status">🎵</span>`;
-    list.appendChild(row);
+  tracks.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'track-item';
+    el.innerHTML = `<span class="t-num">${i+1}</span><span class="t-name">${t}</span><span style="font-size:14px">🎵</span>`;
+    list.appendChild(el);
   });
+  const card = document.getElementById('tracklist-card');
   card.style.display = 'block';
-  card.scrollIntoView({behavior:'smooth',block:'nearest'});
+  card.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 function startAlbum() {
-  if (!pendingTracks.length) { toast('Cerca prima le tracce!','error'); return; }
-  const folder = document.getElementById('folder-input').value.trim();
-  const pause = document.getElementById('album-pause').value;
-  fetch('/api/download',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({mode:'album',tracks:pendingTracks,artist:pendingArtist,pause,folder})
-  }).then(r=>r.json()).then(d=>{
-    if(d.error){toast(d.error,'error');return;}
-    toast('▶ Download album avviato!','success');
-    switchTab('progress');
-    startPolling();
+  if (!pendingTracks.length) { toast('Cerca prima le tracce!', 'error'); return; }
+  startDownload({
+    mode: 'album',
+    tracks: pendingTracks,
+    artist: pendingArtist,
+    pause: document.getElementById('album-pause').value
   });
 }
 
-// ===== PLAYLIST =====
+// ═══════════════════════════════════════
+// PLAYLIST
+// ═══════════════════════════════════════
 function startPlaylist() {
   const url = document.getElementById('playlist-url').value.trim();
-  if (!url) { toast('Inserisci un URL!','error'); return; }
-  const folder = document.getElementById('folder-input').value.trim();
-  fetch('/api/download',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({mode:'playlist_url',url,folder})
-  }).then(r=>r.json()).then(d=>{
-    if(d.error){toast(d.error,'error');return;}
-    toast('▶ Download playlist avviato!','success');
-    switchTab('progress');
-    startPolling();
-  });
+  if (!url) { toast('Inserisci un URL!', 'error'); return; }
+  startDownload({mode:'playlist_url', url});
 }
 
-// ===== STOP =====
-function stopDownload() {
-  fetch('/api/stop',{method:'POST'}).then(()=>toast('⏹ Fermato','error'));
+// ═══════════════════════════════════════
+// SPOTIFY
+// ═══════════════════════════════════════
+function startSpotify() {
+  const url = document.getElementById('spotify-url').value.trim();
+  if (!url) { toast('Inserisci un link Spotify!', 'error'); return; }
+  if (!url.includes('spotify.com')) { toast('URL non sembra un link Spotify', 'warn'); }
+  startDownload({mode:'spotify', url});
 }
 
-// ===== POLLING =====
-function startPolling() {
-  if (pollInterval) clearInterval(pollInterval);
-  pollInterval = setInterval(updateProgress, 1200);
-  updateProgress();
-}
-
-async function updateProgress() {
+// ═══════════════════════════════════════
+// COMMON DOWNLOAD STARTER
+// ═══════════════════════════════════════
+async function startDownload(body) {
+  body.folder = currentFolder;
   try {
-    const r = await fetch('/api/status');
-    const s = await r.json();
-    renderProgress(s);
+    const r = await fetch('/api/download', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (d.error) { toast('❌ ' + d.error, 'error'); return; }
+    toast(`✅ Aggiunto in coda: ${d.label}`, 'success');
+    startPolling();
+    document.getElementById('nav-prog-badge').style.display = 'inline-flex';
+    // briefly show queue tab so user sees it was queued
+    switchTab('queue');
+  } catch { toast('Errore di rete', 'error'); }
+}
+
+// ═══════════════════════════════════════
+// STOP & QUEUE CONTROLS
+// ═══════════════════════════════════════
+function stopDownload() {
+  fetch('/api/stop', {method:'POST'}).then(() => toast('⏹ Download corrente fermato', 'warn'));
+}
+
+async function clearQueue() {
+  const r = await fetch('/api/queue/clear', {method:'POST'});
+  const d = await r.json();
+  if (d.ok) {
+    toast(`🗑️ Coda svuotata (${d.cleared} elementi rimossi)`, 'warn');
+    renderQueue([], false);
+  }
+}
+
+async function removeFromQueue(id) {
+  const r = await fetch('/api/queue/remove', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id})
+  });
+  const d = await r.json();
+  if (d.ok) toast('✅ Elemento rimosso', 'success');
+  pollQueue();
+}
+
+// ═══════════════════════════════════════
+// POLLING
+// ═══════════════════════════════════════
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(poll, 1200);
+  poll();
+}
+
+async function poll() {
+  try {
+    const [sr, qr] = await Promise.all([
+      fetch('/api/status'),
+      fetch('/api/queue')
+    ]);
+    const s = await sr.json();
+    const q = await qr.json();
+    renderState(s);
+    renderQueue(q.queue, q.active, s);
+    if (['done','stopped','error'].includes(s.status) && !s.active && q.queue.length === 0) {
+      clearInterval(pollTimer); pollTimer = null;
+      document.getElementById('nav-prog-badge').style.display = 'none';
+    }
   } catch {}
 }
 
-function renderProgress(s) {
+async function pollQueue() {
+  try {
+    const r = await fetch('/api/queue');
+    const q = await r.json();
+    renderQueue(q.queue, q.active);
+  } catch {}
+}
+
+// ═══════════════════════════════════════
+// RENDER QUEUE
+// ═══════════════════════════════════════
+function renderQueue(queue, active, state) {
+  // Update sidebar badge
+  const countBadge = document.getElementById('nav-queue-count');
+  if (queue.length > 0) {
+    countBadge.textContent = queue.length;
+    countBadge.style.display = 'inline-flex';
+  } else {
+    countBadge.style.display = 'none';
+  }
+
+  // Active row
+  const activeRow = document.getElementById('queue-active-row');
+  if (active && state) {
+    activeRow.style.display = 'block';
+    document.getElementById('queue-active-title').textContent = state.current_track || 'Download in corso...';
+    document.getElementById('queue-active-sub').textContent =
+      state.total > 0 ? `${state.current} / ${state.total} tracce` : 'In elaborazione...';
+  } else {
+    activeRow.style.display = 'none';
+  }
+
+  // Pending label
+  document.getElementById('queue-pending-label').textContent =
+    queue.length > 0 ? `In attesa (${queue.length})` : 'In attesa';
+
+  // Queue list
+  const list = document.getElementById('queue-list');
+  if (queue.length === 0) {
+    list.innerHTML = '<div class="queue-empty">🎉 Nessun download in coda</div>';
+    document.getElementById('btn-clear-queue').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('btn-clear-queue').style.display = 'inline-flex';
+  list.innerHTML = '';
+  queue.forEach((item, i) => {
+    const icon = MODE_ICON[item.mode] || '🎵';
+    const el = document.createElement('div');
+    el.className = 'queue-item';
+    el.innerHTML = `
+      <div class="qi-pos">${i + 1}</div>
+      <div class="qi-icon">${icon}</div>
+      <div class="qi-label" title="${item.label}">${item.label}</div>
+      <button class="qi-remove" onclick="removeFromQueue(${item.id})" title="Rimuovi">✕</button>
+    `;
+    list.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════
+// RENDER STATE
+// ═══════════════════════════════════════
+function renderState(s) {
   const pct = s.total > 0 ? Math.round((s.current / s.total) * 100) : 0;
-  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
   document.getElementById('prog-left').textContent = `${s.current} / ${s.total || '?'} tracce`;
   document.getElementById('prog-pct').textContent = pct + '%';
-  document.getElementById('stat-success').textContent = s.success;
-  document.getElementById('stat-errors').textContent = s.errors;
-  document.getElementById('stat-total').textContent = s.total || '?';
+  document.getElementById('s-ok').textContent = s.success;
+  document.getElementById('s-err').textContent = s.errors;
+  document.getElementById('s-tot').textContent = s.total || '?';
   document.getElementById('np-title').textContent = s.current_track || 'In attesa...';
-  document.getElementById('np-sub').textContent = s.download_path || '';
+  document.getElementById('np-path').textContent = s.download_path || '—';
+  // update folder display if server has a different value
+  if (s.download_path && s.download_path !== currentFolder) setFolderDisplay(s.download_path);
   document.getElementById('footer-track').textContent = s.current_track || 'In attesa';
-  document.getElementById('footer-sub').textContent = s.active ? `${s.current}/${s.total} tracce` : 'Nessun download';
+  document.getElementById('footer-sub').textContent = s.active ? `${s.current}/${s.total} tracce · ${s.download_path||''}` : 'Nessun download';
 
   // badge
-  const badgeMap = {
-    idle:['INATTIVO','badge-idle'],
-    downloading:['SCARICANDO','badge-downloading'],
-    pausing:['PAUSA','badge-pausing'],
-    done:['COMPLETATO','badge-done'],
-    stopped:['FERMATO','badge-stopped'],
-    error:['ERRORE','badge-error'],
+  const MAP = {
+    idle:  ['INATTIVO','b-idle'],
+    downloading: ['SCARICANDO','b-dl'],
+    pausing: ['PAUSA','b-pause'],
+    done:  ['COMPLETATO','b-done'],
+    stopped: ['FERMATO','b-stop'],
+    error: ['ERRORE','b-err'],
   };
-  const [label,cls] = badgeMap[s.status] || ['INATTIVO','badge-idle'];
-  ['status-badge','footer-badge'].forEach(id=>{
+  const [label, cls] = MAP[s.status] || ['INATTIVO','b-idle'];
+  ['status-badge','footer-badge','topbar-badge'].forEach(id => {
     const el = document.getElementById(id);
-    el.className = 'status-badge '+cls;
+    if (!el) return;
+    el.className = 'badge ' + cls;
     el.textContent = label;
   });
 
-  // pause bar
-  if (s.status === 'pausing') {
-    document.getElementById('pause-fill').style.width = '100%';
-    document.getElementById('pause-fill').style.transition = 'none';
-    setTimeout(()=>{
-      document.getElementById('pause-fill').style.transition = 'width 10s linear';
-      document.getElementById('pause-fill').style.width = '0%';
-    },50);
-  } else if (s.status !== 'pausing') {
-    document.getElementById('pause-fill').style.width = '0%';
-  }
-
-  // np-art animation
+  // art animation
   const art = document.getElementById('np-art');
-  if (s.active && s.status === 'downloading') {
-    art.style.animation = 'pulse-art 2s infinite alternate';
-  } else {
-    art.style.animation = 'none';
-  }
+  art.className = 'np-art' + (s.active && s.status === 'downloading' ? ' active' : '');
 
-  // stop button
+  // pause bar
+  const pf = document.getElementById('pause-fill');
+  if (s.status === 'pausing') {
+    pf.style.transition = 'none'; pf.style.width = '100%';
+    setTimeout(() => { pf.style.transition = 'width 10s linear'; pf.style.width = '0%'; }, 80);
+  } else { pf.style.width = '0%'; }
+
+  // stop btn
   document.getElementById('btn-stop').style.display = s.active ? 'inline-flex' : 'none';
 
   // log
-  const logBox = document.getElementById('log-box');
+  const box = document.getElementById('log-box');
   if (s.log && s.log.length !== lastLogLen) {
-    const newLines = s.log.slice(lastLogLen);
-    newLines.forEach(entry => {
+    s.log.slice(lastLogLen).forEach(e => {
       const div = document.createElement('div');
-      div.className = 'log-line ' + (entry.level || 'info');
-      div.textContent = `[${entry.ts}] ${entry.msg}`;
-      logBox.appendChild(div);
+      div.className = 'll ' + (e.level || 'info');
+      div.textContent = `[${e.ts}] ${e.msg}`;
+      box.appendChild(div);
     });
     lastLogLen = s.log.length;
-    logBox.scrollTop = logBox.scrollHeight;
-  }
-
-  if (s.status === 'done' && !s.active) {
-    clearInterval(pollInterval);
-    pollInterval = null;
+    box.scrollTop = box.scrollHeight;
   }
 }
 
@@ -767,33 +1076,48 @@ function clearLog() {
   lastLogLen = 0;
 }
 
-// ===== OPEN FOLDER =====
-function openFolder() {
-  const f = document.getElementById('folder-input').value.trim();
-  if (!f) { toast('Nessuna cartella impostata', 'error'); return; }
-  toast(`📂 Cartella: ${f}`, 'success');
-}
-
-// ===== DEPS CHECK =====
+// ═══════════════════════════════════════
+// DEPS CHECK
+// ═══════════════════════════════════════
 async function checkDeps() {
   try {
     const r = await fetch('/api/check_deps');
     const d = await r.json();
-    document.getElementById('dot-ytdlp').className = 'dep-dot ' + (d['yt-dlp'] ? 'ok' : 'err');
-    document.getElementById('dot-ffmpeg').className = 'dep-dot ' + (d['ffmpeg'] ? 'ok' : 'err');
-    if (!d['yt-dlp']) toast('⚠️ yt-dlp non trovato — installa con: pip install yt-dlp', 'error');
+    setDot('dot-ytdlp', d['yt-dlp'] ? 'ok' : 'err');
+    setDot('dot-ffmpeg', d['ffmpeg'] ? 'ok' : 'err');
+    setDot('dot-spotdl', d['spotdl'] ? 'ok' : 'warn');
+    if (!d['yt-dlp']) toast('⚠️ yt-dlp non trovato — installa: pip install yt-dlp', 'error');
     if (!d['ffmpeg']) toast('⚠️ FFmpeg non trovato — installa da ffmpeg.org', 'error');
+    const installBtn = document.getElementById('spotdl-install-btn');
+    if (!d['spotdl']) {
+      installBtn.style.display = 'inline';
+    } else {
+      installBtn.style.display = 'none';
+    }
+    if (d.current_folder) setFolderDisplay(d.current_folder);
   } catch {}
 }
+function setDot(id, cls) { document.getElementById(id).className = 'dep-dot ' + cls; }
 
-// ===== TOAST =====
+async function installSpotdl() {
+  setDot('dot-spotdl', 'spin');
+  document.getElementById('spotdl-install-btn').style.display = 'none';
+  toast('📦 Installazione spotdl...', 'warn');
+  await fetch('/api/install_spotdl', {method:'POST'});
+  // poll for a few seconds then re-check
+  setTimeout(checkDeps, 8000);
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
 function toast(msg, type='info') {
-  const c = document.getElementById('toast-container');
+  const wrap = document.getElementById('toasts');
   const el = document.createElement('div');
-  el.className = `toast ${type}`;
+  el.className = 'toast ' + (type === 'warn' ? 'warn' : type);
   el.textContent = msg;
-  c.appendChild(el);
-  setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(()=>el.remove(), 300); }, 3500);
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 320); }, 3500);
 }
 </script>
 </body>

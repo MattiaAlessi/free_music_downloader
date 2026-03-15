@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Music Downloader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Circular+Std:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;
+  --surface:#111111;
+  --surface2:#1a1a1a;
+  --surface3:#242424;
+  --border:#2a2a2a;
+  --green:#1DB954;
+  --green-dim:#158a3e;
+  --green-glow:rgba(29,185,84,0.15);
+  --orange:#ff6437;
+  --blue:#3d91ff;
+  --text:#ffffff;
+  --text-muted:#a7a7a7;
+  --text-dim:#535353;
+  --radius:12px;
+  --radius-lg:20px;
+  --font:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ===== NOISE OVERLAY ===== */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:.4;
+}
+
+/* ===== LAYOUT ===== */
+.layout{
+  display:grid;
+  grid-template-columns:260px 1fr;
+  grid-template-rows:auto 1fr auto;
+  min-height:100vh;
+  position:relative;z-index:1;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  grid-row:1/3;
+  background:var(--bg);
+  border-right:1px solid var(--border);
+  padding:28px 20px;
+  display:flex;flex-direction:column;gap:32px;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.logo{
+  display:flex;align-items:center;gap:10px;
+  padding-bottom:8px;
+}
+.logo-icon{
+  width:36px;height:36px;
+  background:var(--green);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  box-shadow:0 0 20px var(--green-glow);
+}
+.logo-text{
+  font-size:15px;font-weight:700;letter-spacing:-.3px;
+}
+.logo-text span{color:var(--green)}
+
+.nav-section{}
+.nav-label{
+  font-size:10px;font-weight:700;letter-spacing:1.5px;
+  color:var(--text-dim);text-transform:uppercase;
+  margin-bottom:12px;padding-left:4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:8px;
+  font-size:14px;font-weight:500;color:var(--text-muted);
+  cursor:pointer;transition:all .15s;
+  border:none;background:none;width:100%;text-align:left;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--surface3);color:var(--text)}
+.nav-item .icon{font-size:18px;width:24px;text-align:center}
+
+.deps{
+  margin-top:auto;
+  padding:14px;
+  background:var(--surface2);
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+}
+.deps-title{font-size:11px;color:var(--text-dim);font-weight:600;margin-bottom:8px;letter-spacing:.5px}
+.dep-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);padding:3px 0}
+.dep-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dep-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dep-dot.err{background:#f44336;box-shadow:0 0 6px #f44336}
+
+/* ===== TOPBAR ===== */
+.topbar{
+  background:linear-gradient(180deg,rgba(10,10,10,.95) 0%,rgba(10,10,10,0) 100%);
+  padding:20px 36px 0;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:10;
+}
+.topbar-title{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.folder-pill{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:30px;padding:8px 16px;
+  font-size:12px;color:var(--text-muted);cursor:pointer;
+  transition:all .2s;
+}
+.folder-pill:hover{border-color:var(--green);color:var(--text)}
+.folder-pill input{
+  background:none;border:none;outline:none;
+  font:inherit;color:inherit;width:200px;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main{
+  padding:28px 36px 120px;
+  overflow-y:auto;
+}
+
+/* ===== TABS ===== */
+.tabs{display:flex;gap:4px;margin-bottom:32px;background:var(--surface);border-radius:12px;padding:4px;width:fit-content}
+.tab{
+  padding:9px 22px;border-radius:9px;
+  font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;
+  border:none;background:none;color:var(--text-muted);
+}
+.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* ===== PANELS ===== */
+.panel{display:none}
+.panel.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== CARDS ===== */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:28px;
+  margin-bottom:20px;
+}
+.card-title{
+  font-size:13px;font-weight:700;
+  color:var(--text-muted);letter-spacing:.8px;
+  text-transform:uppercase;margin-bottom:20px;
+  display:flex;align-items:center;gap:8px;
+}
+
+/* ===== INPUTS ===== */
+.input-group{margin-bottom:16px}
+.input-label{
+  display:block;font-size:12px;font-weight:600;
+  color:var(--text-muted);margin-bottom:8px;letter-spacing:.3px;
+}
+.input{
+  width:100%;background:var(--surface2);
+  border:1.5px solid var(--border);border-radius:10px;
+  padding:12px 16px;font:inherit;font-size:14px;color:var(--text);
+  transition:border-color .2s,box-shadow .2s;outline:none;
+}
+.input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-glow)}
+.input::placeholder{color:var(--text-dim)}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ===== BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 28px;border-radius:30px;
+  font:inherit;font-size:14px;font-weight:700;
+  cursor:pointer;border:none;transition:all .2s;letter-spacing:.2px;
+}
+.btn-green{background:var(--green);color:#000}
+.btn-green:hover{background:#1ed760;transform:scale(1.03)}
+.btn-green:active{transform:scale(.98)}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
+.btn-outline:hover{border-color:var(--text);background:var(--surface2)}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-orange:hover{filter:brightness(1.1);transform:scale(1.02)}
+.btn-red{background:#e22134;color:#fff}
+.btn-red:hover{filter:brightness(1.1)}
+.btn-sm{padding:9px 18px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+
+/* ===== TRACK LIST ===== */
+.track-list{
+  background:var(--surface2);border-radius:var(--radius);
+  overflow:hidden;margin:16px 0;
+  border:1px solid var(--border);
+  max-height:300px;overflow-y:auto;
+}
+.track-item{
+  display:flex;align-items:center;gap:14px;
+  padding:11px 16px;border-bottom:1px solid var(--border);
+  transition:background .15s;font-size:13px;
+}
+.track-item:last-child{border-bottom:none}
+.track-item:hover{background:var(--surface3)}
+.track-num{color:var(--text-dim);font-size:12px;min-width:24px;text-align:right;font-variant-numeric:tabular-nums}
+.track-name{flex:1;color:var(--text-muted)}
+.track-status{font-size:16px}
+
+/* ===== PROGRESS AREA ===== */
+.progress-card{
+  background:linear-gradient(135deg,#0f1f14 0%,#0a0a0a 100%);
+  border:1px solid rgba(29,185,84,.2);
+}
+.now-playing{
+  display:flex;align-items:center;gap:16px;
+  margin-bottom:20px;
+}
+.np-art{
+  width:52px;height:52px;border-radius:8px;
+  background:linear-gradient(135deg,var(--green),var(--green-dim));
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+  animation:pulse-art 2s infinite alternate;
+}
+@keyframes pulse-art{from{box-shadow:0 0 10px var(--green-glow)}to{box-shadow:0 0 30px rgba(29,185,84,.4)}}
+.np-info{}
+.np-title{font-size:15px;font-weight:700;margin-bottom:3px}
+.np-sub{font-size:12px;color:var(--text-muted)}
+
+.progress-track{height:4px;background:var(--surface3);border-radius:4px;overflow:hidden;margin:16px 0 8px}
+.progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width .4s ease;box-shadow:0 0 8px var(--green)}
+.progress-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)}
+
+.stats-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;
+}
+.stat-box{
+  background:var(--surface2);border-radius:10px;padding:14px;text-align:center;
+  border:1px solid var(--border);
+}
+.stat-val{font-size:24px;font-weight:700;line-height:1}
+.stat-val.green{color:var(--green)}
+.stat-val.red{color:#f44336}
+.stat-val.blue{color:var(--blue)}
+.stat-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+
+.pause-bar{height:2px;background:var(--surface3);border-radius:4px;overflow:hidden;margin:8px 0}
+.pause-fill{height:100%;background:var(--orange);border-radius:4px;transition:width .8s linear}
+
+/* ===== LOG ===== */
+.log-box{
+  background:#0d0d0d;border-radius:10px;
+  border:1px solid var(--border);
+  height:140px;overflow-y:auto;
+  padding:12px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;
+  line-height:1.7;
+}
+.log-line{color:var(--text-dim)}
+.log-line.success{color:#4caf50}
+.log-line.error{color:#f44336}
+.log-line.warning{color:#ff9800}
+
+/* ===== STATUS BADGE ===== */
+.status-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;
+}
+.badge-idle{background:var(--surface3);color:var(--text-dim)}
+.badge-downloading{background:rgba(29,185,84,.15);color:var(--green);border:1px solid rgba(29,185,84,.3)}
+.badge-downloading::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1s infinite}
+.badge-pausing{background:rgba(255,100,55,.15);color:var(--orange);border:1px solid rgba(255,100,55,.3)}
+.badge-done{background:rgba(29,185,84,.2);color:var(--green)}
+.badge-stopped{background:rgba(244,67,54,.15);color:#f44336}
+.badge-error{background:rgba(244,67,54,.15);color:#f44336}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--border)}
+
+/* ===== TOAST ===== */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:10px;padding:12px 18px;font-size:13px;
+  animation:slideIn .3s ease;box-shadow:0 8px 32px rgba(0,0,0,.5);
+  display:flex;align-items:center;gap:8px;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.toast.success{border-color:rgba(29,185,84,.4);color:var(--green)}
+.toast.error{border-color:rgba(244,67,54,.4);color:#f44336}
+
+/* ===== HINT ===== */
+.hint{font-size:12px;color:var(--text-dim);margin-top:6px;padding-left:2px}
+
+/* ===== DIVIDER ===== */
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+/* ===== FOOTER ===== */
+.footer{
+  grid-column:2;
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:0 36px;height:72px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;bottom:0;
+}
+.footer-left{display:flex;align-items:center;gap:16px}
+.footer-track{font-size:13px;font-weight:600}
+.footer-sub{font-size:11px;color:var(--text-muted)}
+
+/* responsive */
+@media(max-width:768px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .main{padding:20px 16px 100px}
+  .topbar{padding:16px 16px 0}
+  .input-row{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🎵</div>
+      <div class="logo-text">Music<span>Load</span></div>
+    </div>
+
+    <nav class="nav-section">
+      <div class="nav-label">Modalità</div>
+      <button class="nav-item active" onclick="switchTab('single')" id="nav-single">
+        <span class="icon">🎵</span> Singola canzone
+      </button>
+      <button class="nav-item" onclick="switchTab('album')" id="nav-album">
+        <span class="icon">💿</span> Album
+      </button>
+      <button class="nav-item" onclick="switchTab('playlist')" id="nav-playlist">
+        <span class="icon">🔗</span> Playlist / URL
+      </button>
+    </nav>
+
+    <nav class="nav-section">
+      <div class="nav-label">Download</div>
+      <button class="nav-item" onclick="switchTab('progress')" id="nav-progress">
+        <span class="icon">📊</span> Progresso
+      </button>
+    </nav>
+
+    <div class="deps" id="deps-box">
+      <div class="deps-title">DIPENDENZE</div>
+      <div class="dep-row"><div class="dep-dot" id="dot-ytdlp"></div><span>yt-dlp</span></div>
+      <div class="dep-row"><div class="dep-dot" id="dot-ffmpeg"></div><span>FFmpeg</span></div>
+    </div>
+  </aside>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-title" id="topbar-title">Singola Canzone</div>
+    <div class="folder-pill" title="Cartella di destinazione">
+      📁 <input type="text" id="folder-input" placeholder="Cartella download..." oninput="updateFolder()" />
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- SINGLE -->
+    <div class="panel active" id="panel-single">
+      <div class="card">
+        <div class="card-title">🎵 Cerca e scarica una canzone</div>
+        <div class="input-group">
+          <label class="input-label">NOME CANZONE O QUERY</label>
+          <input class="input" id="single-query" type="text"
+            placeholder="es. Bohemian Rhapsody Queen, oppure incolla un URL YouTube"
+            onkeydown="if(event.key==='Enter')startSingle()"/>
+          <div class="hint">Puoi scrivere nome artista + canzone, oppure incollare direttamente un link YouTube</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="startSingle()">▶ Scarica</button>
+          <button class="btn btn-outline btn-sm" onclick="pasteToInput('single-query')">📋 Incolla</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALBUM -->
+    <div class="panel" id="panel-album">
+      <div class="card">
+        <div class="card-title">💿 Scarica album completo</div>
+        <div class="input-row">
+          <div class="input-group">
+            <label class="input-label">NOME ALBUM</label>
+            <input class="input" id="album-name" type="text" placeholder="es. The Dark Side of the Moon"/>
+          </div>
+          <div class="input-group">
+            <label class="input-label">ARTISTA (opzionale)</label>
+            <input class="input" id="album-artist" type="text" placeholder="es. Pink Floyd"/>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">PAUSA TRA TRACCE (secondi)</label>
+          <select class="input" id="album-pause" style="appearance:auto;cursor:pointer">
+            <option value="5">5 secondi</option>
+            <option value="10" selected>10 secondi</option>
+            <option value="15">15 secondi</option>
+            <option value="20">20 secondi</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-orange" onclick="searchAlbum()" id="btn-search-album">🔍 Cerca tracce su Google</button>
+        </div>
+      </div>
+
+      <div class="card" id="tracklist-card" style="display:none">
+        <div class="card-title" id="tracklist-title">📋 Tracce trovate</div>
+        <div class="track-list" id="track-list-container"></div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="startAlbum()">▶ Scarica tutto</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('tracklist-card').style.display='none'">✕ Chiudi</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAYLIST URL -->
+    <div class="panel" id="panel-playlist">
+      <div class="card">
+        <div class="card-title">🔗 Playlist o URL diretto</div>
+        <div class="input-group">
+          <label class="input-label">URL YOUTUBE / PLAYLIST / CANALE</label>
+          <input class="input" id="playlist-url" type="text"
+            placeholder="https://www.youtube.com/playlist?list=..."
+            onkeydown="if(event.key==='Enter')startPlaylist()"/>
+          <div class="hint">Supporta: playlist YouTube, video singoli, canali, SoundCloud e altri siti supportati da yt-dlp</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="startPlaylist()">▶ Scarica playlist</button>
+          <button class="btn btn-outline btn-sm" onclick="pasteToInput('playlist-url')">📋 Incolla URL</button>
+        </div>
+      </div>
+
+      <div class="card" style="background:linear-gradient(135deg,#0f0f1a,#0a0a0a);border-color:rgba(61,145,255,.2)">
+        <div class="card-title" style="color:var(--blue)">💡 Siti supportati</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;font-size:12px;color:var(--text-muted)">
+          <span>▸ YouTube</span><span>▸ YouTube Music</span><span>▸ SoundCloud</span>
+          <span>▸ Bandcamp</span><span>▸ Vimeo</span><span>▸ Twitch</span>
+          <span>▸ Dailymotion</span><span>▸ Reddit</span><span>▸ Twitter/X</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="panel" id="panel-progress">
+      <div class="card progress-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div class="card-title" style="margin:0">📊 Stato download</div>
+          <div class="status-badge badge-idle" id="status-badge">INATTIVO</div>
+        </div>
+
+        <div class="now-playing" id="now-playing-row">
+          <div class="np-art" id="np-art">🎵</div>
+          <div class="np-info">
+            <div class="np-title" id="np-title">In attesa...</div>
+            <div class="np-sub" id="np-sub">Nessun download attivo</div>
+          </div>
+        </div>
+
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+        <div class="progress-labels">
+          <span id="prog-left">0 / 0 tracce</span>
+          <span id="prog-pct">0%</span>
+        </div>
+
+        <div class="pause-bar"><div class="pause-fill" id="pause-fill" style="width:0%"></div></div>
+
+        <div class="stats-row">
+          <div class="stat-box"><div class="stat-val green" id="stat-success">0</div><div class="stat-label">Successo</div></div>
+          <div class="stat-box"><div class="stat-val red" id="stat-errors">0</div><div class="stat-label">Errori</div></div>
+          <div class="stat-box"><div class="stat-val blue" id="stat-total">0</div><div class="stat-label">Totale</div></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase">Log</span>
+          <button class="btn btn-outline btn-sm" onclick="clearLog()" style="padding:4px 10px;font-size:11px">Pulisci</button>
+        </div>
+        <div class="log-box" id="log-box"></div>
+
+        <div class="btn-row" style="margin-top:16px">
+          <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopDownload()" style="display:none">⏹ Ferma</button>
+          <button class="btn btn-outline btn-sm" onclick="openFolder()">📂 Apri cartella</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-left">
+      <div>
+        <div class="footer-track" id="footer-track">In attesa</div>
+        <div class="footer-sub" id="footer-sub">Nessun download</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="status-badge badge-idle" id="footer-badge">IDLE</div>
+    </div>
+  </footer>
+
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ===== STATE =====
+let pendingTracks = [];
+let pendingArtist = '';
+let pollInterval = null;
+let lastLogLen = 0;
+let pauseFillAnim = null;
+
+// ===== INIT =====
+window.onload = () => {
+  const defaultFolder = localStorage.getItem('dl_folder') || '';
+  document.getElementById('folder-input').value = defaultFolder;
+  checkDeps();
+  startPolling();
+};
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab)?.classList.add('active');
+  const titles = {single:'Singola Canzone',album:'Album',playlist:'Playlist / URL',progress:'Progresso Download'};
+  document.getElementById('topbar-title').textContent = titles[tab] || '';
+}
+
+// ===== FOLDER =====
+function updateFolder() {
+  const f = document.getElementById('folder-input').value.trim();
+  localStorage.setItem('dl_folder', f);
+  if (f) fetch('/api/set_folder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({folder:f})});
+}
+
+// ===== PASTE =====
+async function pasteToInput(id) {
+  try {
+    const t = await navigator.clipboard.readText();
+    document.getElementById(id).value = t;
+    toast('📋 Incollato!','success');
+  } catch {
+    toast('❌ Permesso clipboard negato. Usa Ctrl+V','error');
+  }
+}
+
+// ===== SINGLE DOWNLOAD =====
+function startSingle() {
+  const q = document.getElementById('single-query').value.trim();
+  if (!q) { toast('Inserisci una canzone!','error'); return; }
+  const folder = document.getElementById('folder-input').value.trim();
+  fetch('/api/download',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({mode:'single',query:q,folder})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){toast(d.error,'error');return;}
+    toast('▶ Download avviato!','success');
+    switchTab('progress');
+    startPolling();
+  });
+}
+
+// ===== ALBUM SEARCH =====
+async function searchAlbum() {
+  const album = document.getElementById('album-name').value.trim();
+  const artist = document.getElementById('album-artist').value.trim();
+  if (!album) { toast('Inserisci il nome dell\'album!','error'); return; }
+  const btn = document.getElementById('btn-search-album');
+  btn.disabled = true; btn.textContent = '⏳ Cerco...';
+  try {
+    const r = await fetch('/api/search_album',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({album,artist})
+    });
+    const d = await r.json();
+    btn.disabled = false; btn.textContent = '🔍 Cerca tracce su Google';
+    if (d.error||!d.tracks?.length){toast('Nessuna traccia trovata','error');return;}
+    pendingTracks = d.tracks;
+    pendingArtist = artist;
+    showTracklist(d.tracks, album, artist);
+  } catch(e){
+    btn.disabled=false; btn.textContent='🔍 Cerca tracce su Google';
+    toast('Errore di rete','error');
+  }
+}
+
+function showTracklist(tracks, album, artist) {
+  const card = document.getElementById('tracklist-card');
+  const title = document.getElementById('tracklist-title');
+  const list = document.getElementById('track-list-container');
+  title.textContent = `📋 ${album}${artist?' — '+artist:''} · ${tracks.length} tracce`;
+  list.innerHTML = '';
+  tracks.forEach((t,i) => {
+    const row = document.createElement('div');
+    row.className = 'track-item';
+    row.innerHTML = `<span class="track-num">${i+1}</span><span class="track-name">${t}</span><span class="track-status">🎵</span>`;
+    list.appendChild(row);
+  });
+  card.style.display = 'block';
+  card.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function startAlbum() {
+  if (!pendingTracks.length) { toast('Cerca prima le tracce!','error'); return; }
+  const folder = document.getElementById('folder-input').value.trim();
+  const pause = document.getElementById('album-pause').value;
+  fetch('/api/download',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({mode:'album',tracks:pendingTracks,artist:pendingArtist,pause,folder})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){toast(d.error,'error');return;}
+    toast('▶ Download album avviato!','success');
+    switchTab('progress');
+    startPolling();
+  });
+}
+
+// ===== PLAYLIST =====
+function startPlaylist() {
+  const url = document.getElementById('playlist-url').value.trim();
+  if (!url) { toast('Inserisci un URL!','error'); return; }
+  const folder = document.getElementById('folder-input').value.trim();
+  fetch('/api/download',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({mode:'playlist_url',url,folder})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){toast(d.error,'error');return;}
+    toast('▶ Download playlist avviato!','success');
+    switchTab('progress');
+    startPolling();
+  });
+}
+
+// ===== STOP =====
+function stopDownload() {
+  fetch('/api/stop',{method:'POST'}).then(()=>toast('⏹ Fermato','error'));
+}
+
+// ===== POLLING =====
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(updateProgress, 1200);
+  updateProgress();
+}
+
+async function updateProgress() {
+  try {
+    const r = await fetch('/api/status');
+    const s = await r.json();
+    renderProgress(s);
+  } catch {}
+}
+
+function renderProgress(s) {
+  const pct = s.total > 0 ? Math.round((s.current / s.total) * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('prog-left').textContent = `${s.current} / ${s.total || '?'} tracce`;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('stat-success').textContent = s.success;
+  document.getElementById('stat-errors').textContent = s.errors;
+  document.getElementById('stat-total').textContent = s.total || '?';
+  document.getElementById('np-title').textContent = s.current_track || 'In attesa...';
+  document.getElementById('np-sub').textContent = s.download_path || '';
+  document.getElementById('footer-track').textContent = s.current_track || 'In attesa';
+  document.getElementById('footer-sub').textContent = s.active ? `${s.current}/${s.total} tracce` : 'Nessun download';
+
+  // badge
+  const badgeMap = {
+    idle:['INATTIVO','badge-idle'],
+    downloading:['SCARICANDO','badge-downloading'],
+    pausing:['PAUSA','badge-pausing'],
+    done:['COMPLETATO','badge-done'],
+    stopped:['FERMATO','badge-stopped'],
+    error:['ERRORE','badge-error'],
+  };
+  const [label,cls] = badgeMap[s.status] || ['INATTIVO','badge-idle'];
+  ['status-badge','footer-badge'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.className = 'status-badge '+cls;
+    el.textContent = label;
+  });
+
+  // pause bar
+  if (s.status === 'pausing') {
+    document.getElementById('pause-fill').style.width = '100%';
+    document.getElementById('pause-fill').style.transition = 'none';
+    setTimeout(()=>{
+      document.getElementById('pause-fill').style.transition = 'width 10s linear';
+      document.getElementById('pause-fill').style.width = '0%';
+    },50);
+  } else if (s.status !== 'pausing') {
+    document.getElementById('pause-fill').style.width = '0%';
+  }
+
+  // np-art animation
+  const art = document.getElementById('np-art');
+  if (s.active && s.status === 'downloading') {
+    art.style.animation = 'pulse-art 2s infinite alternate';
+  } else {
+    art.style.animation = 'none';
+  }
+
+  // stop button
+  document.getElementById('btn-stop').style.display = s.active ? 'inline-flex' : 'none';
+
+  // log
+  const logBox = document.getElementById('log-box');
+  if (s.log && s.log.length !== lastLogLen) {
+    const newLines = s.log.slice(lastLogLen);
+    newLines.forEach(entry => {
+      const div = document.createElement('div');
+      div.className = 'log-line ' + (entry.level || 'info');
+      div.textContent = `[${entry.ts}] ${entry.msg}`;
+      logBox.appendChild(div);
+    });
+    lastLogLen = s.log.length;
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  if (s.status === 'done' && !s.active) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+}
+
+function clearLog() {
+  document.getElementById('log-box').innerHTML = '';
+  lastLogLen = 0;
+}
+
+// ===== OPEN FOLDER =====
+function openFolder() {
+  const f = document.getElementById('folder-input').value.trim();
+  if (!f) { toast('Nessuna cartella impostata', 'error'); return; }
+  toast(`📂 Cartella: ${f}`, 'success');
+}
+
+// ===== DEPS CHECK =====
+async function checkDeps() {
+  try {
+    const r = await fetch('/api/check_deps');
+    const d = await r.json();
+    document.getElementById('dot-ytdlp').className = 'dep-dot ' + (d['yt-dlp'] ? 'ok' : 'err');
+    document.getElementById('dot-ffmpeg').className = 'dep-dot ' + (d['ffmpeg'] ? 'ok' : 'err');
+    if (!d['yt-dlp']) toast('⚠️ yt-dlp non trovato — installa con: pip install yt-dlp', 'error');
+    if (!d['ffmpeg']) toast('⚠️ FFmpeg non trovato — installa da ffmpeg.org', 'error');
+  } catch {}
+}
+
+// ===== TOAST =====
+function toast(msg, type='info') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(()=>el.remove(), 300); }, 3500);
+}
+</script>
+</body>
+</html>

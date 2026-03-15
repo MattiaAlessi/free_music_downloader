@@ -1,127 +1,87 @@
-# 🎵 Music Downloader
+# 🎵 Music Downloader — Web UI
 
-A desktop app to download music from YouTube using album search or Spotify-style search queries. Built with Python, `yt-dlp`, and `customtkinter`.
-
----
-
-## Requirements
-
-- **Python 3.8+** — [Download here](https://www.python.org/downloads/)
-- **FFmpeg** — Required to convert audio to MP3
-
-### Install FFmpeg
-
-**Windows:**
-```bash
-winget install FFmpeg
-```
-
-**macOS:**
-```bash
-brew install ffmpeg
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt install ffmpeg
-```
+Interfaccia web stile Spotify per scaricare musica da YouTube, playlist e album.  
+Backend Python (Flask) + Frontend HTML/CSS/JS moderno.
 
 ---
 
-## Installation
+## Requisiti
 
-### 1. Clone or download this project
+- **Python 3.8+**
+- **FFmpeg** installato nel sistema
 
-Place `music_downloader.py` and `requirements.txt` in the same folder.
+### Installa FFmpeg
 
-### 2. Install Python dependencies
+| OS | Comando |
+|---|---|
+| Windows | `winget install FFmpeg` |
+| macOS | `brew install ffmpeg` |
+| Linux | `sudo apt install ffmpeg` |
+
+---
+
+## Installazione
 
 ```bash
+# 1. Clona o scarica il progetto
+cd music_downloader
+
+# 2. Installa le dipendenze Python
 pip install -r requirements.txt
 ```
 
-> On some systems you may need `pip3` instead of `pip`.
-
 ---
 
-## Running the App
+## Avvio
 
 ```bash
-python music_downloader.py
+python app.py
 ```
 
-> On some systems use `python3 music_downloader.py`
-
-The app will automatically check for and install any missing Python dependencies on first launch.
+Poi apri il browser su: **http://localhost:5000**
 
 ---
 
-## How to Use
+## Funzionalità
 
-The app has two modes, selectable via the buttons at the top.
+### 🎵 Singola canzone
+- Cerca per nome (es. `Bohemian Rhapsody Queen`)
+- Oppure incolla direttamente un URL YouTube
 
----
+### 💿 Album completo
+- Inserisci nome album + artista
+- L'app cerca la tracklist su Google (Genius, Wikipedia, Discogs…)
+- Conferma le tracce e avvia il download automatico
 
-### 🎵 Spotify Mode
+### 🔗 Playlist / URL diretto
+- Incolla qualsiasi URL YouTube (playlist, canale, video singolo)
+- Supporta anche SoundCloud, Bandcamp, Vimeo e altri siti yt-dlp
 
-Use this to search and download a **single track** by name or Spotify-style query.
-
-1. Select the **SPOTIFY** tab
-2. Type or paste a song name (e.g. `Bohemian Rhapsody Queen`) into the search field  
-   _(You can also paste a direct YouTube URL if you prefer)_
-3. Click **🚀 AVVIA DOWNLOAD**
-
-The app will search YouTube for the best match and download it as an MP3.
-
----
-
-### 🔍 Manual / Album Mode
-
-Use this to download an **entire album** automatically.
-
-1. Select the **MANUALE** tab
-2. Enter the **album name** (e.g. `The Dark Side of the Moon`)
-3. Optionally enter the **artist name** (e.g. `Pink Floyd`) for better results
-4. Click **🔍 CERCA ALBUM SU GOOGLE**
-5. A window will appear with the tracklist found online — review it
-6. Click **✅ SCARICA QUESTE TRACCE** to confirm
-7. Click **🚀 AVVIA DOWNLOAD** to start downloading all tracks
+### 📊 Progresso
+- Visualizzazione in tempo reale traccia per traccia
+- Log dettagliato
+- Statistiche successi/errori
 
 ---
 
-## Options
+## Cartella di download
 
-| Option | Description |
-|---|---|
-| 📂 Sfoglia | Choose where downloaded files are saved (default: `~/Desktop/Musica Scaricata`) |
-| ⏱️ Pausa tra tracce | Delay between track downloads (5–20 seconds). Helps avoid rate limiting. |
-| ⏹️ FERMA | Stop the current download session |
+Impostabile dall'interfaccia (campo in alto a destra).  
+Default: `~/Desktop/Musica Scaricata`
 
----
-
-## Output
-
-- Files are saved as **MP3** in the selected folder
-- Album tracks are named: `Track Name - Artist Name.mp3`
-- Single tracks use the YouTube video title
+Esempi:
+- Windows: `C:\Users\Mattia\Music\Download`
+- macOS/Linux: `/home/mattia/Musica`
 
 ---
 
-## Troubleshooting
+## Struttura progetto
 
-| Problem | Fix |
-|---|---|
-| `FFmpeg not found` | Install FFmpeg (see above) and restart the app |
-| `yt-dlp` errors | Run `pip install -U yt-dlp` to update to the latest version |
-| Album tracks not found | Try adding the artist name, or check the spelling |
-| Download fails for a track | The app will log the error and continue with the next track |
-| App doesn't open | Make sure Python 3.8+ is installed and `customtkinter` is installed |
-
----
-
-## Notes
-
-- This tool downloads audio from **YouTube** — it does not connect to Spotify
-- Tracklist lookup uses **Google Search** (no API key needed)
-- For best results, use artist + album name together
-- yt-dlp is kept up to date automatically by running `pip install -U yt-dlp` periodically
+```
+music_downloader/
+├── app.py              # Backend Flask
+├── requirements.txt    # Dipendenze Python
+├── README.md
+└── static/
+    └── index.html      # Frontend (tutto in un file)
+```

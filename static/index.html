@@ -536,20 +536,6 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       </div>
     </div>
 
-    <div class="card card-accent-blue">
-      <div class="card-title" style="color:var(--blue)">💡 Siti supportati da yt-dlp</div>
-      <div class="sites-grid">
-        <div class="site-chip"><span class="si">▶</span>YouTube</div>
-        <div class="site-chip"><span class="si">🎵</span>YT Music</div>
-        <div class="site-chip"><span class="si">☁️</span>SoundCloud</div>
-        <div class="site-chip"><span class="si">🎸</span>Bandcamp</div>
-        <div class="site-chip"><span class="si">📹</span>Vimeo</div>
-        <div class="site-chip"><span class="si">🎮</span>Twitch</div>
-        <div class="site-chip"><span class="si">📺</span>Dailymotion</div>
-        <div class="site-chip"><span class="si">🐦</span>Twitter/X</div>
-        <div class="site-chip"><span class="si">📱</span>Instagram</div>
-      </div>
-    </div>
   </div>
 
   <!-- ── SPOTIFY ── -->
@@ -629,7 +615,8 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       <div class="log-box" id="log-box"></div>
 
       <div class="btn-row" style="margin-top:14px">
-        <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopDownload()" style="display:none">⏹ Ferma</button>
+        <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopDownload()" style="display:none">⏹ Ferma tutto</button>
+        <button class="btn btn-outline btn-sm" id="btn-resume" onclick="switchTab('single')" style="display:none">▶ Aggiungi nuovo download</button>
       </div>
     </div>
   </div>
@@ -649,11 +636,14 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">▶ In corso</div>
         <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(29,185,84,.06);border:1px solid rgba(29,185,84,.2);border-radius:10px">
           <div class="np-art" id="queue-active-art" style="width:36px;height:36px;font-size:16px">🎵</div>
-          <div style="overflow:hidden">
+          <div style="overflow:hidden;flex:1">
             <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="queue-active-title">—</div>
             <div style="font-size:11px;color:var(--dim)" id="queue-active-sub">—</div>
           </div>
-          <div class="badge b-dl" style="margin-left:auto;flex-shrink:0">SCARICANDO</div>
+          <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+            <button class="btn btn-outline btn-xs" onclick="skipDownload()" title="Salta e vai al prossimo">⏭ Salta</button>
+            <div class="badge b-dl">SCARICANDO</div>
+          </div>
         </div>
       </div>
 
@@ -900,7 +890,15 @@ async function startDownload(body) {
 // STOP & QUEUE CONTROLS
 // ═══════════════════════════════════════
 function stopDownload() {
-  fetch('/api/stop', {method:'POST'}).then(() => toast('⏹ Download corrente fermato', 'warn'));
+  // Ferma tutto e svuota la coda
+  fetch('/api/stop', {method:'POST'}).then(() => toast('⏹ Download e coda fermati', 'warn'));
+}
+
+async function skipDownload() {
+  // Ferma solo il download corrente, la coda continua
+  await fetch('/api/skip', {method:'POST'});
+  toast('⏭ Download saltato — prossimo in partenza...', 'warn');
+  setTimeout(pollQueue, 800);
 }
 
 async function clearQueue() {
@@ -1056,6 +1054,11 @@ function renderState(s) {
 
   // stop btn
   document.getElementById('btn-stop').style.display = s.active ? 'inline-flex' : 'none';
+  // resume btn: mostra dopo stop/done/errore
+  const resumeBtn = document.getElementById('btn-resume');
+  if (resumeBtn) {
+    resumeBtn.style.display = ['stopped','done','error'].includes(s.status) && !s.active ? 'inline-flex' : 'none';
+  }
 
   // log
   const box = document.getElementById('log-box');
